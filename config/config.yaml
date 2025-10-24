@@ -1,0 +1,55 @@
+# Spatial Weather Prediction Tool Configuration
+
+# Google Cloud Project Settings
+project_id: "focused-mote-472706-u8"
+dataset_id: "weather_demo"
+
+# Data Source Configuration
+bigquery:
+  stations_table: "bigquery-public-data.noaa_gsod.stations"
+  weather_table_prefix: "bigquery-public-data.noaa_gsod.gsod"
+  
+# Analysis Parameters
+analysis:
+  default_start_year: 2005
+  default_end_year: 2025
+  min_data_coverage_percent: 90
+  min_days_for_analysis: 500
+  
+# Clustering Parameters
+clustering:
+  kmeans:
+    n_clusters: 5
+    random_state: 42
+  dbscan:
+    eps: 0.5
+    min_samples: 5
+  getis_ord:
+    permutations: 999
+    significance_level: 0.05
+  morans_i:
+    permutations: 999
+    significance_level: 0.05
+
+# Anomaly Detection
+anomaly_detection:
+  threshold_methods:
+    - "2_std_dev"      # ±2 standard deviations
+    - "percentile_95"   # Beyond 5th/95th percentiles
+    - "iqr_method"      # Interquartile range method
+  default_threshold: "2_std_dev"
+  
+# Visualization Settings
+visualization:
+  map_style: "open-street-map"
+  color_scheme:
+    normal: "green"
+    moderate: "orange" 
+    extreme: "red"
+  marker_size_range: [5, 20]
+  
+# Output Settings
+output:
+  format: "html"  # html, png, or both
+  save_interactive: true
+  save_static: false
