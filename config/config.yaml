@@ -31,6 +31,15 @@ clustering:
     permutations: 999
     significance_level: 0.05
 
+# Spatial Clustering for Regional Irregularity Detection
+spatial_clustering:
+  neighbor_count: 10                    # Number of closest neighbors to analyze
+  irregularity_threshold: 1.0            # Default: 1 standard deviation from neighbor average
+  time_period:
+    start_year: 2005                    # Analysis start year (extendable back to 1929+)
+    end_year: 2025                      # Analysis end year
+  test_station: "722920"                # Catalina Airport USAF for initial testing
+
 # Anomaly Detection
 anomaly_detection:
   threshold_methods:

@@ -41,8 +41,14 @@ class BigQueryConnector:
             bool: True if authentication successful
         """
         try:
+            # Try using credentials_path parameter first
             if credentials_path:
                 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
+                print(f"Using credentials from: {credentials_path}")
+            # Try default path in project directory
+            elif os.path.exists("spatial_weather_key.json"):
+                os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.abspath("spatial_weather_key.json")
+                print(f"Using credentials from: spatial_weather_key.json")
             
             self.client = bigquery.Client(project=self.project_id)
             # Test connection
@@ -79,15 +85,7 @@ class BigQueryConnector:
         if not self.client:
             raise RuntimeError("Not authenticated. Call authenticate() first.")
         
-        # Build dynamic table references for year range
-        year_tables = []
-        for year in range(start_year, end_year + 1):
-            year_tables.append(f"`bigquery-public-data.noaa_gsod.gsod{year}`")
-        
-        weather_tables_union = " UNION ALL ".join([
-            f"SELECT stn, year FROM {table}" for table in year_tables
-        ])
-        
+        # Use wildcard table for year range (simpler approach)
         query = f"""
         WITH
         NumTempDatesByStation AS (
@@ -98,8 +96,9 @@ class BigQueryConnector:
               CAST(daily_weather.mo AS INT64),
               CAST(daily_weather.da AS INT64)
             )) AS num_temp_dates
-          FROM ({weather_tables_union}) daily_weather
-          WHERE daily_weather.temp IS NOT NULL
+          FROM `bigquery-public-data.noaa_gsod.gsod*` daily_weather
+          WHERE _table_suffix BETWEEN '{start_year}' AND '{end_year}'
+            AND daily_weather.temp IS NOT NULL
             AND daily_weather.max IS NOT NULL
             AND daily_weather.min IS NOT NULL
             AND daily_weather.temp != 9999.9
