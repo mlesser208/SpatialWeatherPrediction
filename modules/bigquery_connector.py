@@ -19,7 +19,7 @@ class BigQueryConnector:
     def __init__(self, config_path: str = "config/config.yaml"):
         """Initialize BigQuery connector with configuration."""
         self.config = self._load_config(config_path)
-        self.client = None
+        self.client: Optional[bigquery.Client] = None
         self.project_id = self.config['project_id']
         
     def _load_config(self, config_path: str) -> Dict:
@@ -48,9 +48,10 @@ class BigQueryConnector:
             # Try default path in project directory
             elif os.path.exists("spatial_weather_key.json"):
                 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.abspath("spatial_weather_key.json")
-                print(f"Using credentials from: spatial_weather_key.json")
+                print("Using credentials from: spatial_weather_key.json")
             
             self.client = bigquery.Client(project=self.project_id)
+            assert self.client is not None  # Type narrowing for type checker
             # Test connection
             self.client.query("SELECT 1").result()
             return True

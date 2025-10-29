@@ -8,12 +8,11 @@ Implements the three-step anomaly prediction process:
 4. Symbolization - Color-code stations by anomaly level
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Tuple, Optional, Union
-import yaml
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
 import warnings
+import yaml  # type: ignore
+import pandas as pd  # type: ignore
+import numpy as np
 warnings.filterwarnings('ignore')
 
 # Import our modules
@@ -39,6 +38,10 @@ class AnomalyPredictor:
         self.baseline_years = (2005, 2024)  # 20-year baseline period
         self.recent_year = 2024  # Most recent year for deviation analysis
         self.threshold_methods = ['2_std_dev', 'percentile_95', 'iqr_method']
+        
+        # Store analysis results for later access
+        self.classification_results: Dict[str, Dict[str, Any]] = {}
+        self.latest_results: Optional[Dict[str, Any]] = None
         
     def _load_config(self, config_path: str) -> Dict:
         """Load configuration from YAML file."""
@@ -84,7 +87,7 @@ class AnomalyPredictor:
                 else:
                     print(f"    Insufficient data for station {usaf} ({len(temp_data)} days)")
                     
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 print(f"   Failed to fit baseline for station {usaf}: {e}")
                 continue
         
@@ -151,7 +154,7 @@ class AnomalyPredictor:
                 
                 print(f"   Analyzed deviations for station {usaf}")
                 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 print(f"   Failed to analyze deviations for station {usaf}: {e}")
                 continue
         
@@ -170,12 +173,12 @@ class AnomalyPredictor:
         print("Step 3: Calculating anomaly detection thresholds...")
         
         # Collect all deviations across all stations
-        all_deviations = []
-        for usaf, results in deviation_results.items():
+        all_deviations_list = []
+        for results in deviation_results.values():
             deviations = results['data']['deviation'].dropna()
-            all_deviations.extend(deviations.tolist())
+            all_deviations_list.extend(deviations.tolist())
         
-        all_deviations = np.array(all_deviations)
+        all_deviations = np.array(all_deviations_list)
         
         # Calculate thresholds using different methods
         thresholds = {}
@@ -329,7 +332,7 @@ class AnomalyPredictor:
         return symbolization
     
     def run_full_analysis(self, station_usaf: str, 
-                         threshold_method: str = '2_std_dev') -> Dict[str, Dict]:
+                         threshold_method: str = '2_std_dev') -> Dict[str, Any]:
         """
         Run the complete anomaly prediction analysis.
         
@@ -338,9 +341,9 @@ class AnomalyPredictor:
             threshold_method: Which threshold method to use
             
         Returns:
-            Dict[str, Dict]: Complete analysis results
+            Dict[str, Any]: Complete analysis results
         """
-        print(f"=== Running Full Anomaly Prediction Analysis ===")
+        print("=== Running Full Anomaly Prediction Analysis ===")
         print(f"Target Station: {station_usaf}")
         print(f"Threshold Method: {threshold_method}")
         print()
@@ -366,8 +369,11 @@ class AnomalyPredictor:
         # Step 6: Generate symbolization
         symbolization = self.generate_symbolization(classification_results)
         
+        # Store classification results as instance variable
+        self.classification_results = classification_results
+        
         # Compile results
-        results = {
+        results: Dict[str, Any] = {
             'target_station': station_usaf,
             'neighbors': neighbors,
             'baseline_params': baseline_params,
@@ -377,6 +383,9 @@ class AnomalyPredictor:
             'symbolization': symbolization,
             'analysis_summary': self._generate_summary(classification_results)
         }
+        
+        # Store latest results
+        self.latest_results = results
         
         print("\n=== Analysis Complete ===")
         self._print_summary(results)
@@ -402,7 +411,7 @@ class AnomalyPredictor:
             'average_extreme_percentage': avg_extreme_percentage
         }
     
-    def _print_summary(self, results: Dict[str, Dict]):
+    def _print_summary(self, results: Dict[str, Any]):
         """Print analysis summary."""
         summary = results['analysis_summary']
         print(f"Stations Analyzed: {summary['total_stations_analyzed']}")
