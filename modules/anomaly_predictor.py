@@ -10,8 +10,8 @@ Implements the three-step anomaly prediction process:
 
 from typing import Dict, List, Optional, Any
 import warnings
-import yaml  # type: ignore
-import pandas as pd  # type: ignore
+import yaml  
+import pandas as pd  
 import numpy as np
 warnings.filterwarnings('ignore')
 
